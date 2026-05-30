@@ -34,18 +34,32 @@ export function CGPATrendChart({ data = [] }) {
       <LineChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
         <XAxis dataKey="session" tick={{ fill: '#64748b', fontSize: 11 }} />
-        <YAxis domain={[0, 5]} tick={{ fill: '#64748b', fontSize: 11 }} />
+        <YAxis
+          yAxisId="cgpa"
+          domain={[0, 5]}
+          tick={{ fill: '#64748b', fontSize: 11 }}
+          label={{ value: 'CGPA', angle: -90, position: 'insideLeft', fill: '#64748b', fontSize: 10 }}
+        />
+        <YAxis
+          yAxisId="rate"
+          orientation="right"
+          domain={[60, 100]}
+          tick={{ fill: '#64748b', fontSize: 11 }}
+          label={{ value: '%', angle: 90, position: 'insideRight', fill: '#64748b', fontSize: 10 }}
+        />
         <Tooltip content={<CustomTooltip />} />
         <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
         <Line
+          yAxisId="cgpa"
           type="monotone" dataKey="avg_cgpa" name="Avg CGPA"
           stroke={TEAL} strokeWidth={2.5} dot={{ fill: TEAL, r: 4 }}
           activeDot={{ r: 6 }}
         />
         <Line
+          yAxisId="rate"
           type="monotone" dataKey="pass_rate" name="Pass Rate %"
           stroke={AMBER} strokeWidth={2} strokeDasharray="5 5"
-          dot={{ fill: AMBER, r: 3 }} yAxisId={0}
+          dot={{ fill: AMBER, r: 3 }}
         />
       </LineChart>
     </ResponsiveContainer>
