@@ -231,16 +231,33 @@ def get_students(u):
 @token_required
 def get_student(u, sid):
     rows = db_query("SELECT s.*,d.name AS department FROM students s LEFT JOIN departments d ON d.id=s.department_id WHERE s.id=:sid", {"sid":sid})
-    if not rows:
+    if rows:
+        student = dict(rows[0])
+        grades = db_query("""
+            SELECT c.code,c.title,c.credits,g.ca_score,g.exam_score,g.total_score,
+                   g.letter_grade,g.grade_point,g.session,g.semester
+            FROM grades g JOIN courses c ON c.id=g.course_id
+            WHERE g.student_id=:sid ORDER BY g.session DESC,g.semester,c.code
+        """, {"sid":sid})
+        student["grades"] = [dict(g) for g in (grades or [])]
+        return jsonify({"student":student})
+
+    # Mock fallback — find by id OR matric_number
+    mock = next((s for s in MOCK_STUDENTS if s["id"] == sid or s["matric_number"] == sid), None)
+    if not mock:
         return jsonify({"error":"Student not found"}), 404
-    student = dict(rows[0])
-    grades  = db_query("""
-        SELECT c.code,c.title,c.credits,g.ca_score,g.exam_score,g.total_score,
-               g.letter_grade,g.grade_point,g.session,g.semester
-        FROM grades g JOIN courses c ON c.id=g.course_id
-        WHERE g.student_id=:sid ORDER BY g.session DESC,g.semester,c.code
-    """, {"sid":sid})
-    student["grades"] = [dict(g) for g in (grades or [])]
+
+    student = dict(mock)
+    student["grades"] = [
+        {"code":"CSC401","title":"Machine Learning",      "credits":3,"ca_score":25,"exam_score":58,"total_score":83,"letter_grade":"A","grade_point":5.0,"session":"2023/2024","semester":1},
+        {"code":"CSC402","title":"Final Year Project I",  "credits":6,"ca_score":27,"exam_score":62,"total_score":89,"letter_grade":"A","grade_point":5.0,"session":"2023/2024","semester":1},
+        {"code":"CSC403","title":"Information Security",  "credits":3,"ca_score":22,"exam_score":50,"total_score":72,"letter_grade":"A","grade_point":5.0,"session":"2023/2024","semester":2},
+        {"code":"CSC404","title":"Final Year Project II", "credits":6,"ca_score":26,"exam_score":55,"total_score":81,"letter_grade":"A","grade_point":5.0,"session":"2023/2024","semester":2},
+        {"code":"CSC301","title":"Software Engineering",  "credits":3,"ca_score":20,"exam_score":45,"total_score":65,"letter_grade":"B","grade_point":4.0,"session":"2022/2023","semester":1},
+        {"code":"CSC302","title":"Computer Networks",     "credits":3,"ca_score":18,"exam_score":42,"total_score":60,"letter_grade":"B","grade_point":4.0,"session":"2022/2023","semester":1},
+        {"code":"CSC303","title":"Artificial Intelligence","credits":3,"ca_score":21,"exam_score":48,"total_score":69,"letter_grade":"B","grade_point":4.0,"session":"2022/2023","semester":2},
+        {"code":"CSC304","title":"Web Technologies",      "credits":3,"ca_score":19,"exam_score":44,"total_score":63,"letter_grade":"B","grade_point":4.0,"session":"2022/2023","semester":2},
+    ]
     return jsonify({"student":student})
 
 # ── Analytics ─────────────────────────────────────────────────────────────────
