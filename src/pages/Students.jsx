@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, SlidersHorizontal, ChevronRight, Users, Download } from 'lucide-react'
 import { useStudents } from '../hooks/useStudents'
-import { PageLoader, ErrorAlert, SectionHeader, EmptyState, RoleBadge } from '../components/ui'
+import { PageLoader, ErrorAlert, SectionHeader, EmptyState } from '../components/ui'
 
 const LEVELS = ['100', '200', '300', '400', '500']
 const DEPTS  = [
@@ -16,11 +16,34 @@ function CGPABadge({ cgpa }) {
   return <span className={`font-semibold ${cls}`}>{v.toFixed(2)}</span>
 }
 
+function exportToCSV(students) {
+  const headers = ['Matric No', 'Full Name', 'Department', 'Level', 'Session', 'CGPA', 'Failed Courses']
+  const rows = students.map(s => [
+    s.matric_number,
+    s.full_name,
+    s.department,
+    `${s.level}L`,
+    s.session,
+    parseFloat(s.cgpa || 0).toFixed(2),
+    s.failed_courses ?? 0
+  ])
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = `students_${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 export default function Students() {
   const navigate = useNavigate()
-  const [search,   setSearch]   = useState('')
-  const [dept,     setDept]     = useState('')
-  const [level,    setLevel]    = useState('')
+  const [search,      setSearch]      = useState('')
+  const [dept,        setDept]        = useState('')
+  const [level,       setLevel]       = useState('')
   const [showFilters, setShowFilters] = useState(false)
 
   const { students, loading, error } = useStudents(
@@ -47,6 +70,15 @@ export default function Students() {
       <SectionHeader
         title="Students"
         description={`${filtered.length} student${filtered.length !== 1 ? 's' : ''} found`}
+        action={
+          <button
+            onClick={() => exportToCSV(filtered)}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+        }
       />
 
       {/* Search + filter bar */}
@@ -74,32 +106,21 @@ export default function Students() {
         <div className="card flex flex-wrap gap-4 py-4">
           <div className="flex flex-col gap-1.5 min-w-48">
             <label className="text-xs text-slate-500 font-medium">Department</label>
-            <select
-              value={dept}
-              onChange={e => setDept(e.target.value)}
-              className="input text-sm"
-            >
+            <select value={dept} onChange={e => setDept(e.target.value)} className="input text-sm">
               <option value="">All departments</option>
               {DEPTS.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1.5 min-w-32">
             <label className="text-xs text-slate-500 font-medium">Level</label>
-            <select
-              value={level}
-              onChange={e => setLevel(e.target.value)}
-              className="input text-sm"
-            >
+            <select value={level} onChange={e => setLevel(e.target.value)} className="input text-sm">
               <option value="">All levels</option>
               {LEVELS.map(l => <option key={l} value={l}>{l}L</option>)}
             </select>
           </div>
           {(dept || level) && (
             <div className="flex items-end">
-              <button
-                onClick={() => { setDept(''); setLevel('') }}
-                className="text-xs text-slate-400 hover:text-red-400 underline"
-              >
+              <button onClick={() => { setDept(''); setLevel('') }} className="text-xs text-slate-400 hover:text-red-400 underline">
                 Clear filters
               </button>
             </div>
@@ -109,23 +130,15 @@ export default function Students() {
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <EmptyState
-          icon={Users}
-          title="No students found"
-          description="Try adjusting your search or filter criteria."
-        />
+        <EmptyState icon={Users} title="No students found" description="Try adjusting your search or filter criteria." />
       ) : (
         <div className="card p-0 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-900/50">
-                  {['Matric No.','Full Name','Department','Level','Session','CGPA','Failed',''].map((h, i) => (
-                    <th
-                      key={i}
-                      className={`px-4 py-3 text-xs font-medium text-slate-500 whitespace-nowrap
-                        ${i > 4 ? 'text-right' : 'text-left'}`}
-                    >
+                  {['Matric No.', 'Full Name', 'Department', 'Level', 'Session', 'CGPA', 'Failed', ''].map((h, i) => (
+                    <th key={i} className={`px-4 py-3 text-xs font-medium text-slate-500 whitespace-nowrap ${i > 4 ? 'text-right' : 'text-left'}`}>
                       {h}
                     </th>
                   ))}
@@ -138,24 +151,12 @@ export default function Students() {
                     onClick={() => navigate(`/students/${s.id}`)}
                     className="hover:bg-slate-800/40 cursor-pointer transition-colors"
                   >
-                    <td className="px-4 py-3 font-mono text-xs text-slate-400 whitespace-nowrap">
-                      {s.matric_number}
-                    </td>
-                    <td className="px-4 py-3 text-slate-200 font-medium whitespace-nowrap">
-                      {s.full_name}
-                    </td>
-                    <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
-                      {s.department}
-                    </td>
-                    <td className="px-4 py-3 text-slate-400">
-                      {s.level}L
-                    </td>
-                    <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
-                      {s.session}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <CGPABadge cgpa={s.cgpa} />
-                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-slate-400 whitespace-nowrap">{s.matric_number}</td>
+                    <td className="px-4 py-3 text-slate-200 font-medium whitespace-nowrap">{s.full_name}</td>
+                    <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{s.department}</td>
+                    <td className="px-4 py-3 text-slate-400">{s.level}L</td>
+                    <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{s.session}</td>
+                    <td className="px-4 py-3 text-right"><CGPABadge cgpa={s.cgpa} /></td>
                     <td className="px-4 py-3 text-right">
                       <span className={s.failed_courses > 0 ? 'text-red-400 font-medium' : 'text-slate-500'}>
                         {s.failed_courses ?? 0}
