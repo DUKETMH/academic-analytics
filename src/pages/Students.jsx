@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, SlidersHorizontal, ChevronRight, Users } from 'lucide-react'
+import { Search, SlidersHorizontal, ChevronRight, Users, Download } from 'lucide-react'
 import { useStudents } from '../hooks/useStudents'
 import { PageLoader, ErrorAlert, SectionHeader, EmptyState, RoleBadge } from '../components/ui'
 
